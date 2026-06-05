@@ -1,0 +1,71 @@
+[__meta__]
+schema_version = 1
+generated_by = "aristo stamp 0.2.0"
+generated_at = "2026-06-05T07:51:33.45819636Z"
+source_root = "."
+
+[backfill_watermark_advances_only_after_durable]
+kind = "intent"
+text = "The published backfill watermark advances only after the database-file pages it covers have been durably written and synced, so a crash can never leave the log treating frames as applied to the database when the database does not yet hold them."
+verify = "neural"
+status = "unknown"
+text_hash = "sha256:41ecf517973ba246f2906d32769b4fc1dbe366b30a71431402629bff6306d4dd"
+body_hash = "sha256:f85e009b6961916b91528b745d43e4173eb76499e296dd2315daf0290ce76209"
+file = "core/storage/wal.rs"
+site = "impl Wal for WalFile::publish_backfill (line 3783)"
+covered_region = "function"
+
+[committed_frames_visible_only_after_durable]
+kind = "intent"
+text = "Appended frames become visible to readers only after they have been durably written and synced, so a reader never observes a frame whose data a crash could still lose."
+verify = "neural"
+status = "unknown"
+text_hash = "sha256:74c9ab83ffb8f941a7af5f5c9917f2d082bc6753ca8bb0f62de7dac42fe1f83f"
+body_hash = "sha256:3bfdda02e38c710c89ec74ae8c18d240fd73133d61839848f0fb63fd71979bc7"
+file = "core/storage/wal.rs"
+site = "impl Wal for WalFile::finish_append_frames_commit (line 3953)"
+covered_region = "function"
+
+[log_restart_rotates_salts]
+kind = "intent"
+text = "Restarting the log changes the WAL salts and increments the checkpoint sequence, so frames written under a previous epoch cannot be mistaken as valid once the log file is reused."
+verify = "neural"
+status = "unknown"
+text_hash = "sha256:c52bf25b41ba56279e7c1c7066ae6318ff82a99c1af858ec82c269dec6882d12"
+body_hash = "sha256:b00775bc779b3fcf3713676b6675ea5c354d64b207daa71437d77a884b3ff35f"
+file = "core/storage/wal.rs"
+site = "impl ShmWalCoordination::restart_snapshot_from_authority (line 1710)"
+covered_region = "function"
+
+[truncate_failure_surfaced_as_error]
+kind = "intent"
+text = "A failed WAL truncation, or its post-truncation sync, during a TRUNCATE checkpoint is surfaced as a checkpoint error and is never reported to the caller as a successfully emptied log."
+verify = "neural"
+status = "unknown"
+text_hash = "sha256:ec1910d45dab26c962378a05fb3b082b98e9cc1da455b77c521ffebb2a21146b"
+body_hash = "sha256:05185c3220c7a3336b932e56abace4aeb02d2e59791bd490705d036c41afd850"
+file = "core/storage/wal.rs"
+site = "impl WalFile::truncate_log (line 4891)"
+covered_region = "function"
+
+[wal_initialized_only_after_header_durable]
+kind = "intent"
+text = "The WAL counts as initialized only after its header has been durably written and its sync has completed successfully; a failed header write or sync leaves the WAL uninitialized so the header is re-issued before the next append, so the initialized state never reports durability the on-disk header has not actually reached."
+verify = "neural"
+status = "unknown"
+text_hash = "sha256:29cfd50757584c85fc404e9c3d112aa47fe794bfaee0fc0f1ddff4059bfc24bf"
+body_hash = "sha256:074f1f17f8ba26ffd1109158b3d49d5ad5ded5187c1ba8f678bd80544b495885"
+file = "core/storage/wal.rs"
+site = "trait WalCoordination::mark_initialized (line 574)"
+covered_region = "function"
+
+[wal_records_changes_before_apply]
+kind = "intent"
+text = "An append-only log that records page-level changes before they are applied to the database, so a system crash can be recovered by replaying the log."
+verify = "neural"
+status = "unknown"
+text_hash = "sha256:85270d4acbf9d93ad70d71d3c5a3a4863616dba36abb529bd7d12244e615e79e"
+body_hash = "sha256:3627e8fd855d64d269a1c927fe4a88b02e1edd4db64e2ffc93b704d24b701552"
+file = "core/storage/wal.rs"
+site = "trait Wal (line 608)"
+covered_region = "type"

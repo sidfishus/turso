@@ -571,6 +571,16 @@ trait WalCoordination: Debug + Send + Sync {
     fn prepare_wal_header(&self, io: &dyn IO, page_size: PageSize) -> Option<WalHeader>;
 
     /// Mark the WAL header durable after the header sync completes.
+    #[aristo::intent(
+        "The WAL counts as initialized only after its header has been \
+         durably written and its sync has completed successfully; a \
+         failed header write or sync leaves the WAL uninitialized so the \
+         header is re-issued before the next append, so the initialized \
+         state never reports durability the on-disk header has not \
+         actually reached.",
+        verify = "neural",
+        id = "wal_initialized_only_after_header_durable"
+    )]
     fn mark_initialized(&self);
 
     /// Record a newly appended frame in the backend's page-to-frame lookup state.
@@ -595,6 +605,13 @@ trait WalCoordination: Debug + Send + Sync {
 }
 
 /// Write-ahead log (WAL).
+#[aristo::intent(
+    "An append-only log that records page-level changes before they are \
+     applied to the database, so a system crash can be recovered by \
+     replaying the log.",
+    verify = "neural",
+    id = "wal_records_changes_before_apply"
+)]
 pub trait Wal: Debug + Send + Sync {
     /// Begin a read transaction.
     /// Returns whether the database state has changed since the last read transaction.
@@ -1690,6 +1707,13 @@ impl ShmWalCoordination {
         }
     }
 
+    #[aristo::intent(
+        "Restarting the log changes the WAL salts and increments the \
+         checkpoint sequence, so frames written under a previous epoch \
+         cannot be mistaken as valid once the log file is reused.",
+        verify = "neural",
+        id = "log_restart_rotates_salts"
+    )]
     fn restart_snapshot_from_authority(
         &self,
         snapshot: SharedWalCoordinationHeader,
@@ -3756,6 +3780,15 @@ impl Wal for WalFile {
         )
     }
 
+    #[aristo::intent(
+        "The published backfill watermark advances only after the \
+         database-file pages it covers have been durably written and \
+         synced, so a crash can never leave the log treating frames as \
+         applied to the database when the database does not yet hold \
+         them.",
+        verify = "neural",
+        id = "backfill_watermark_advances_only_after_durable"
+    )]
     fn publish_backfill(&self, max_frame: u64) {
         self.coordination.publish_backfill(max_frame);
     }
@@ -3917,6 +3950,13 @@ impl Wal for WalFile {
     }
 
     #[instrument(skip_all, level = Level::DEBUG)]
+    #[aristo::intent(
+        "Appended frames become visible to readers only after they have \
+         been durably written and synced, so a reader never observes a \
+         frame whose data a crash could still lose.",
+        verify = "neural",
+        id = "committed_frames_visible_only_after_durable"
+    )]
     fn finish_append_frames_commit(&self) -> Result<()> {
         let max_frame = self.max_frame.load(Ordering::Acquire);
         let last_checksum = *self.last_checksum.read();
@@ -4841,6 +4881,13 @@ impl WalFile {
     }
 
     /// Truncate WAL file to zero and sync it. Called by pager AFTER DB file is synced.
+    #[aristo::intent(
+        "A failed WAL truncation, or its post-truncation sync, during a \
+         TRUNCATE checkpoint is surfaced as a checkpoint error and is \
+         never reported to the caller as a successfully emptied log.",
+        verify = "neural",
+        id = "truncate_failure_surfaced_as_error"
+    )]
     fn truncate_log(
         &self,
         result: &mut CheckpointResult,
