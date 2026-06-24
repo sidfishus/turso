@@ -1,7 +1,7 @@
 [__meta__]
 schema_version = 1
-generated_by = "aristo stamp 0.2.0"
-generated_at = "2026-06-05T07:51:33.45819636Z"
+generated_by = "aristo stamp 0.2.9"
+generated_at = "2026-06-24T16:45:02.352425Z"
 source_root = "."
 
 [backfill_watermark_advances_only_after_durable]
@@ -45,7 +45,7 @@ status = "unknown"
 text_hash = "sha256:ec1910d45dab26c962378a05fb3b082b98e9cc1da455b77c521ffebb2a21146b"
 body_hash = "sha256:05185c3220c7a3336b932e56abace4aeb02d2e59791bd490705d036c41afd850"
 file = "core/storage/wal.rs"
-site = "impl WalFile::truncate_log (line 4891)"
+site = "impl WalFile::truncate_log (line 4884)"
 covered_region = "function"
 
 [wal_initialized_only_after_header_durable]
